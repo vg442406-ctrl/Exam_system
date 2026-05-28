@@ -2,19 +2,20 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nexus - Testing Terminal</title>
     <style>
-        body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; user-select: none; }
-        .exam-header { background: #2c3e50; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; border-radius: 6px; }
-        .timer-box { background: #e74c3c; padding: 8px 15px; border-radius: 4px; font-weight: bold; font-size: 18px; }
-        .container { max-width: 800px; margin: 30px auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        .question-block { margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid #eee; }
-        .question-text { font-size: 18px; color: #2c3e50; font-weight: 600; margin-bottom: 15px; }
-        .option-label { display: block; padding: 10px; margin-bottom: 8px; background: #f8f9fa; border: 1px solid #e2e8f0; border-radius: 4px; cursor: pointer; }
-        .option-label:hover { background: #edf2f7; }
-        .btn-submit { display: block; width: 100%; padding: 15px; background: #e74c3c; color: white; border: none; border-radius: 6px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 20px; }
-        .btn-submit:hover { background: #c0392b; }
+        body { font-family: Arial, sans-serif; background: #f4f6f9; margin: 0; padding: 20px; user-select: none; }
+        .exam-header { background: #2c3e50; color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; border-radius: 6px; z-index: 100; }
+        .timer-box { background: #e74c3c; padding: 6px 12px; border-radius: 4px; font-weight: bold; }
+        .flex-container { display: flex; max-width: 1100px; margin: 20px auto; gap: 20px; }
+        .main-content { flex: 3; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .proctor-sidebar { flex: 1; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); height: fit-content; text-align: center; }
+        #videoFeed { width: 100%; max-width: 220px; border-radius: 6px; border: 2px solid #2ecc71; transform: scaleX(-1); background: #333; }
+        .host-banner { background: #e67e22; color: white; padding: 10px; border-radius: 4px; margin-bottom: 15px; font-weight: bold; text-align: center; display: none; }
+        .claim-btn { background: white; color: #e67e22; border: none; padding: 4px 8px; font-weight: bold; border-radius: 4px; margin-left: 10px; cursor: pointer; }
+        .question-block { margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+        .option-label { display: block; padding: 8px; margin-bottom: 6px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; }
+        .btn-submit { display: block; width: 100%; padding: 12px; background: #e74c3c; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -22,53 +23,96 @@
         <h2>Exam: {{ exam.title }}</h2>
         <div class="timer-box">Time Left: <span id="timer">{{ exam.duration }}:00</span></div>
     </div>
-    <div class="container">
-        <form id="examForm" action="/exam/{{ exam.id }}/submit" method="POST">
-            <!-- Security tracking logs -->
-            <input type="hidden" name="violations" id="violationsInput" value="0">
-            
-            {% for q in questions %}
-            <div class="question-block">
-                <div class="question-text">{{ loop.index }}. {{ q.question_text }}</div>
-                <label class="option-label"><input type="radio" name="q_{{ q.id }}" value="A" required> {{ q.option_a }}</label>
-                <label class="option-label"><input type="radio" name="q_{{ q.id }}" value="B"> {{ q.option_b }}</label>
-                <label class="option-label"><input type="radio" name="q_{{ q.id }}" value="C"> {{ q.option_c }}</label>
-                <label class="option-label"><input type="radio" name="q_{{ q.id }}" value="D"> {{ q.option_d }}</label>
+    
+    <div class="flex-container">
+        <div class="main-content">
+            <div class="host-banner" id="hostAlertBar">
+                ⚠️ Teacher left the room! <button type="button" class="claim-btn" onclick="triggerHostClaim()">Enter Host Passcode</button>
             </div>
-            {% endfor %}
-            <button type="submit" class="btn-submit">Submit Assessment</button>
-        </form>
+
+            <form id="examForm" action="/exam/{{ exam.id }}/submit" method="POST">
+                <input type="hidden" name="violations" id="violationsInput" value="0">
+                {% for q in questions %}
+                <div class="question-block">
+                    <div style="font-size:16px; font-weight:bold; margin-bottom:10px;">{{ loop.index }}. {{ q.question_text }}</div>
+                    <label class="option-label"><input type="radio" name="q_{{ q.id }}" value="A" required> {{ q.option_a }}</label>
+                    <label class="option-label"><input type="radio" name="q_{{ q.id }}" value="B"> {{ q.option_b }}</label>
+                    <label class="option-label"><input type="radio" name="q_{{ q.id }}" value="C"> {{ q.option_c }}</label>
+                    <label class="option-label"><input type="radio" name="q_{{ q.id }}" value="D"> {{ q.option_d }}</label>
+                </div>
+                {% endfor %}
+                <button type="submit" class="btn-submit">Submit Assessment</button>
+            </form>
+        </div>
+
+        <div class="proctor-sidebar">
+            <h4 style="margin-top:0;">🎥 Proctor Feed</h4>
+            <video id="videoFeed" autoplay playsinline muted></video>
+            <canvas id="captureCanvas" style="display: none;"></canvas>
+            <p style="font-size:12px; color:#7f8c8d;">Host: <span id="hostLabel">{{ exam.host_username }}</span></p>
+        </div>
     </div>
 
     <script>
-        // --- ANTI-CHEAT TERMINAL SYSTEM ---
-        document.addEventListener('contextmenu', e => e.preventDefault());
-        document.addEventListener('copy', e => e.preventDefault());
-        document.addEventListener('paste', e => e.preventDefault());
+        const video = document.getElementById('videoFeed');
+        const canvas = document.getElementById('captureCanvas');
+        const ctx = canvas.getContext('2d');
+
+        navigator.mediaDevices.getUserMedia({ video: { width: 240, height: 180 } })
+            .then(s => { video.srcObject = s; })
+            .catch(e => { console.log("Camera blocked."); });
+
+        setInterval(() => {
+            if(video.srcObject) {
+                canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+                ctx.translate(canvas.width, 0); ctx.scale(-1, 1);
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                fetch('/api/proctor/upload', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image: canvas.toDataURL('image/jpeg', 0.4) })
+                });
+            }
+        }, 4000);
+
+        const examId = {{ exam.id }};
+        setInterval(() => {
+            fetch(`/api/meeting/${examId}/status`)
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById('hostLabel').textContent = data.host_username || "None";
+                    if (!data.is_active || !data.host_username) {
+                        document.getElementById('hostAlertBar').style.display = 'block';
+                    } else {
+                        document.getElementById('hostAlertBar').style.display = 'none';
+                        if (data.host_username === "{{ session['username'] }}") {
+                            window.location.href = "/admin";
+                        }
+                    }
+                });
+        }, 3000);
+
+        function triggerHostClaim() {
+            const code = prompt("Enter Takeover Passcode:");
+            if (!code) return;
+            fetch(`/api/meeting/${examId}/claim-host`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ passcode: code })
+            }).then(res => res.json()).then(data => { alert(data.message); });
+        }
 
         let violationsCount = 0;
         window.addEventListener('blur', () => {
-            violationsCount++;
-            document.getElementById('violationsInput').value = violationsCount;
-            alert("Warning! Tab switching or window blur detected. Violation logged: " + violationsCount);
+            violationsCount++; document.getElementById('violationsInput').value = violationsCount;
+            alert("Violation logged!");
         });
 
-        // --- COUNTDOWN TIMING CONTROLLER ---
-        let durationMinutes = {{ exam.duration }};
-        let totalSeconds = durationMinutes * 60;
-        const timerElement = document.getElementById('timer');
-
-        const countdownInterval = setInterval(() => {
-            let minutes = Math.floor(totalSeconds / 60);
-            let seconds = totalSeconds % 60;
-            seconds = seconds < 10 ? '0' + seconds : seconds;
-            timerElement.textContent = `${minutes}:${seconds}`;
-
-            if (totalSeconds <= 0) {
-                clearInterval(countdownInterval);
-                alert("Time has expired! Your test will be submitted automatically.");
-                document.getElementById('examForm').submit();
-            }
+        let totalSeconds = {{ exam.duration }} * 60;
+        setInterval(() => {
+            let m = Math.floor(totalSeconds / 60), s = totalSeconds % 60;
+            document.getElementById('timer').textContent = `${m}:${s < 10 ? '0'+s : s}`;
+            if (totalSeconds <= 0) document.getElementById('examForm').submit();
             totalSeconds--;
         }, 1000);
     </script>
