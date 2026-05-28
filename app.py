@@ -2,26 +2,27 @@ import os
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime
 
 app = Flask(__name__, template_folder='templates')
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'nexus_secret_key_8849')
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'nexus_secure_key_8849')
 
-# Database Router Configuration
+# Database Connection Configuration
 DB_URL = os.environ.get('DATABASE_URL', 'sqlite:///nexus_exam.db')
 if DB_URL.startswith("postgres://"): DB_URL = DB_URL.replace("postgres://", "postgresql://", 1)
 app.config['SQLALCHEMY_DATABASE_URI'] = DB_URL
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
-# Database Models Ledger
+# Database Models (Explicit Table Names to Match Your Live Postgres Database)
 class User(db.Model):
+    __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(20), default='student')
 
 class Exam(db.Model):
+    __tablename__ = 'exams'
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(100), nullable=False)
     duration = db.Column(db.Integer, default=30)
@@ -31,8 +32,9 @@ class Exam(db.Model):
     is_active = db.Column(db.Boolean, default=False)
 
 class Question(db.Model):
+    __tablename__ = 'questions'
     id = db.Column(db.Integer, primary_key=True)
-    exam_id = db.Column(db.Integer, db.ForeignKey('exam.id'), nullable=False)
+    exam_id = db.Column(db.Integer, db.ForeignKey('exams.id'), nullable=False)
     question_text = db.Column(db.Text, nullable=False)
     option_a = db.Column(db.String(100), nullable=False)
     option_b = db.Column(db.String(100), nullable=False)
@@ -41,6 +43,7 @@ class Question(db.Model):
     correct_option = db.Column(db.String(5), nullable=False)
 
 class ScoreRecord(db.Model):
+    __tablename__ = 'score_records'
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), nullable=False)
     exam_title = db.Column(db.String(100), nullable=False)
@@ -50,11 +53,12 @@ class ScoreRecord(db.Model):
     violations = db.Column(db.Integer, default=0)
 
 class WebcamSnapshot(db.Model):
+    __tablename__ = 'webcam_snapshots'
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
     image_base64 = db.Column(db.Text, nullable=False)
 
-# Core Authentication Handlers
+# Core Authentication Endpoints
 @app.route('/')
 def home():
     return redirect(url_for('dashboard')) if 'username' in session else redirect(url_for('login'))
@@ -87,7 +91,7 @@ def dashboard():
     if 'username' not in session: return redirect(url_for('login'))
     return redirect(url_for('admin_panel')) if session.get('role') == 'teacher' else render_template('dashboard.html', exams=Exam.query.all())
 
-# Student Exam Testing Framework
+# Student Exam Testing Endpoints
 @app.route('/exam/<int:exam_id>')
 def take_exam(exam_id):
     if 'username' not in session: return redirect(url_for('login'))
@@ -107,7 +111,7 @@ def submit_exam(exam_id):
     db.session.commit()
     return f"<h1>Exam Submitted! Score: {score}/{len(questions)} ({pct}%).</h1>"
 
-# Proctoring & Zoom Live Video Controllers
+# Live Video Proctoring Endpoints
 @app.route('/api/proctor/upload', methods=['POST'])
 def proctor_upload():
     if 'username' not in session: return jsonify({"error": "Unauthorized"}), 401
@@ -123,7 +127,7 @@ def proctor_feeds():
     if session.get('role') != 'teacher': return jsonify({"error": "Unauthorized"}), 403
     return jsonify({"feeds": [{"username": f.username, "image": f.image_base64} for f in WebcamSnapshot.query.all()]})
 
-# Host Meeting Checkers & Recovery
+# Host Meeting Monitoring Endpoints
 @app.route('/api/meeting/<int:exam_id>/status')
 def meeting_status(exam_id):
     e = Exam.query.get_or_404(exam_id)
@@ -140,7 +144,7 @@ def claim_host(exam_id):
         return jsonify({"status": "success", "message": "Host Recovery Accepted!"})
     return jsonify({"status": "error", "message": "Incorrect Passcode!"}), 400
 
-# Teacher Administration Interface Panels
+# Teacher Management Panel Endpoints
 @app.route('/admin')
 def admin_panel():
     if session.get('role') != 'teacher': return "Unauthorized Access", 403
