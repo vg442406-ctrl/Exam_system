@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus - Student Dashboard</title>
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; }
+        .navbar { background: #2c3e50; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; border-radius: 6px; }
+        .navbar h1 { margin: 0; font-size: 20px; }
+        .logout { color: #eb4d4b; text-decoration: none; font-weight: bold; }
+        .container { max-width: 1000px; margin: 30px auto; }
+        .welcome-msg { color: #2c3e50; margin-bottom: 20px; }
+        .exam-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+        .exam-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border-top: 4px solid #3498db; }
+        .exam-card h3 { margin-top: 0; color: #2c3e50; }
+        .exam-meta { color: #7f8c8d; font-size: 14px; margin-bottom: 15px; }
+        .btn-start { display: inline-block; padding: 10px 15px; background: #3498db; color: white; text-decoration: none; border-radius: 4px; text-align: center; width: 88%; }
+        .btn-start:hover { background: #2980b9; }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <h1>Nexus Exam System Portal</h1>
+        <a href="/logout" class="logout">Logout</a>
+    </div>
+    <div class="container">
+        <h2 class="welcome-msg">Welcome, {{ session['username'] }} (Student)</h2>
+        <h3>Available Examinations</h3>
+        <div class="exam-grid">
+            {% for exam in exams %}
+            <div class="exam-card">
+                <h3>{{ exam.title }}</h3>
+                <div class="exam-meta">
+                    <strong>Duration:</strong> {{ exam.duration }} Mins <br>
+                    <strong>Total Marks:</strong> {{ exam.total_marks }} Marks
+                </div>
+                <a href="/exam/{{ exam.id }}" class="btn-start">Start Examination</a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus - Testing Terminal</title>
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; user-select: none; }
+        .exam-header { background: #2c3e50; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; border-radius: 6px; }
+        .timer-box { background: #e74c3c; padding: 8px 15px; border-radius: 4px; font-weight: bold; font-size: 18px; }
+        .container { max-width: 800px; margin: 30px auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .question-block { margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid #eee; }
+        .question-text { font-size: 18px; color: #2c3e50; font-weight: 600; margin-bottom: 15px; }
+        .option-label { display: block; padding: 10px; margin-bottom: 8px; background: #f8f9fa; border: 1px solid #e2e8f0; border-radius: 4px; cursor: pointer; }
+        .option-label:hover { background: #edf2f7; }
+        .btn-submit { display: block; width: 100%; padding: 15px; background: #e74c3c; color: white; border: none; border-radius: 6px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 20px; }
+        .btn-submit:hover { background: #c0392b; }
+    </style>
+</head>
+<body>
+    <div class="exam-header">
+        <h2>Exam: {{ exam.title }}</h2>
+        <div class="timer-box">Time Left: <span id="timer">{{ exam.duration }}:00</span></div>
+    </div>
+    <div class="container">
+        <form id="examForm" action="/exam/{{ exam.id }}/submit" method="POST">
+            <!-- Security tracking logs -->
+            <input type="hidden" name="violations" id="violationsInput" value="0">
+            
+            {% for q in questions %}
+            <div class="question-block">
+                <div class="question-text">{{ loop.index }}. {{ q.question_text }}</div>
+                <label class="option-label"><input type="radio" name="q_{{ q.id }}" value="A" required> {{ q.option_a }}</label>
+                <label class="option-label"><input type="radio" name="q_{{ q.id }}" value="B"> {{ q.option_b }}</label>
+                <label class="option-label"><input type="radio" name="q_{{ q.id }}" value="C"> {{ q.option_c }}</label>
+                <label class="option-label"><input type="radio" name="q_{{ q.id }}" value="D"> {{ q.option_d }}</label>
+            </div>
+            {% endfor %}
+            <button type="submit" class="btn-submit">Submit Assessment</button>
+        </form>
+    </div>
+
+    <script>
+        // --- ANTI-CHEAT TERMINAL SYSTEM ---
+        document.addEventListener('contextmenu', e => e.preventDefault());
+        document.addEventListener('copy', e => e.preventDefault());
+        document.addEventListener('paste', e => e.preventDefault());
+
+        let violationsCount = 0;
+        window.addEventListener('blur', () => {
+            violationsCount++;
+            document.getElementById('violationsInput').value = violationsCount;
+            alert("Warning! Tab switching or window blur detected. Violation logged: " + violationsCount);
+        });
+
+        // --- COUNTDOWN TIMING CONTROLLER ---
+        let durationMinutes = {{ exam.duration }};
+        let totalSeconds = durationMinutes * 60;
+        const timerElement = document.getElementById('timer');
+
+        const countdownInterval = setInterval(() => {
+            let minutes = Math.floor(totalSeconds / 60);
+            let seconds = totalSeconds % 60;
+            seconds = seconds < 10 ? '0' + seconds : seconds;
+            timerElement.textContent = `${minutes}:${seconds}`;
+
+            if (totalSeconds <= 0) {
+                clearInterval(countdownInterval);
+                alert("Time has expired! Your test will be submitted automatically.");
+                document.getElementById('examForm').submit();
+            }
+            totalSeconds--;
+        }, 1000);
+    </script>
+</body>
+</html>
