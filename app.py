@@ -6,9 +6,11 @@ from werkzeug.security import generate_password_hash, check_password_hash
 app = Flask(__name__, template_folder='templates')
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'nexus_secure_key_8849')
 
-# Database Connection Configuration
+# --- FIND AND REPLACE ONLY THIS TOP SECTION IN YOUR APP.PY ---
 DB_URL = os.environ.get('DATABASE_URL', 'sqlite:///nexus_exam.db')
-if DB_URL.startswith("postgres://"): DB_URL = DB_URL.replace("postgres://", "postgresql://", 1)
+if DB_URL.startswith("postgres://"): 
+    # This explicitly links Flask to our modern Python 3.14 driver!
+    DB_URL = DB_URL.replace("postgres://", "postgresql+psycopg://", 1)
 app.config['SQLALCHEMY_DATABASE_URI'] = DB_URL
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
